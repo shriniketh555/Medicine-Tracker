@@ -6,6 +6,8 @@ import DailyTracker from './components/DailyTracker';
 import ProfileManager from './components/ProfileManager';
 import HistoryReports from './components/HistoryReports';
 import CaregiverNotifications from './components/CaregiverNotifications';
+import { db } from './firebase';
+import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
 
 export interface Medicine {
   id: string;
@@ -37,7 +39,7 @@ export interface UserProfile {
   doctorPhone: string;
 }
 
-function App() {
+function App({  } : { apiUrl?: string; analyticsId?: string }) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'medicines' | 'tracker' | 'profile' | 'history' | 'caregiver'>('dashboard');
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [intakes, setIntakes] = useState<MedicineIntake[]>([]);
@@ -54,24 +56,25 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load data from localStorage
-    const savedMedicines = localStorage.getItem('medicines');
-    const savedIntakes = localStorage.getItem('intakes');
-    const savedProfile = localStorage.getItem('profile');
-    const savedDarkMode = localStorage.getItem('darkMode');
-    
-    if (savedMedicines) {
-      setMedicines(JSON.parse(savedMedicines));
-    }
-    if (savedIntakes) {
-      setIntakes(JSON.parse(savedIntakes));
-    }
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
-    if (savedDarkMode) {
-      setDarkMode(JSON.parse(savedDarkMode));
-    }
+    // Load data from Firestore
+    const fetchData = async () => {
+      try {
+        const medicinesSnap = await getDocs(collection(db, 'medicines'));
+        const medicinesData = medicinesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMedicines(medicinesData as Medicine[]);
+
+        const intakesSnap = await getDocs(collection(db, 'intakes'));
+        const intakesData = intakesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setIntakes(intakesData as MedicineIntake[]);
+
+        const profileSnap = await getDocs(collection(db, 'profiles'));
+        const profileData = profileSnap.docs.length > 0 ? profileSnap.docs[0].data() : null;
+        if (profileData) setProfile(profileData as UserProfile);
+      } catch (error) {
+        console.error('Error loading data from Firestore:', error);
+      }
+    };
+    fetchData();
 
     // Request notification permission
     if ('Notification' in window) {
@@ -79,19 +82,48 @@ function App() {
         setNotifications(permission === 'granted');
       });
     }
+
+    // Example: Use API URL and Analytics ID
+    // if (apiUrl) {
+    //   console.log('Using API URL:', apiUrl);
+    // }
+    // if (analyticsId) {
+    //   console.log('Using Analytics ID:', analyticsId);
+    // }
   }, []);
 
   useEffect(() => {
-    // Save data to localStorage
-    localStorage.setItem('medicines', JSON.stringify(medicines));
+    // Save medicines to Firestore
+    const saveMedicines = async () => {
+      for (const medicine of medicines) {
+        await setDoc(doc(db, 'medicines', medicine.id), medicine);
+      }
+    };
+    if (medicines.length > 0) {
+      saveMedicines();
+    }
   }, [medicines]);
 
   useEffect(() => {
-    localStorage.setItem('intakes', JSON.stringify(intakes));
+    // Save intakes to Firestore
+    const saveIntakes = async () => {
+      for (const intake of intakes) {
+        await setDoc(doc(db, 'intakes', intake.id), intake);
+      }
+    };
+    if (intakes.length > 0) {
+      saveIntakes();
+    }
   }, [intakes]);
 
   useEffect(() => {
-    localStorage.setItem('profile', JSON.stringify(profile));
+    // Save profile to Firestore
+    const saveProfile = async () => {
+      if (profile.name) {
+        await setDoc(doc(db, 'profiles', 'main'), profile);
+      }
+    };
+    saveProfile();
   }, [profile]);
 
   useEffect(() => {
@@ -377,12 +409,15 @@ function App() {
           />
         )}
         {activeTab === 'caregiver' && (
-          <CaregiverNotifications
-            profile={profile}
-            medicines={medicines}
-            intakes={intakes}
-            darkMode={darkMode}
-          />
+          <>
+            {console.log('Caregiver Email:', profile.caregiverEmail)}
+            <CaregiverNotifications
+              profile={profile}
+              medicines={medicines}
+              intakes={intakes}
+              darkMode={darkMode}
+            />
+          </>
         )}
       </main>
     </div>

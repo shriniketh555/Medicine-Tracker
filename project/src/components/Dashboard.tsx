@@ -44,9 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ medicines, intakes, profile, upda
   // Calculate weekly adherence
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  const weeklyIntakes = intakes.filter(intake => 
-    new Date(intake.date) >= weekAgo && intake.status === 'taken'
-  );
+  // Removed unused weeklyIntakes variable
   const adherenceRate = totalToday > 0 ? Math.round((takenToday / totalToday) * 100) : 0;
 
   return (
@@ -147,7 +145,7 @@ const Dashboard: React.FC<DashboardProps> = ({ medicines, intakes, profile, upda
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingMedicines.map((item, index) => (
+              {upcomingMedicines.map((item) => (
                 <div key={`${item.medicine.id}-${item.time}`} 
                      className={`flex items-center justify-between p-4 rounded-lg border ${
                        darkMode 
@@ -191,7 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({ medicines, intakes, profile, upda
             </h3>
           </div>
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {todaysSchedule.map((item, index) => {
+            {todaysSchedule.map((item) => {
               const status = item.intake?.status || (item.time < currentTime ? 'missed' : 'pending');
               const statusConfig = {
                 taken: { color: 'green', icon: CheckCircle, bg: 'bg-green-50', border: 'border-green-200' },

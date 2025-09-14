@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Mail, Phone, Users, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
 import { Medicine, MedicineIntake, UserProfile } from '../App';
+import 'emailjs-com';
 
 interface CaregiverNotificationsProps {
   profile: UserProfile;
@@ -71,6 +72,39 @@ const CaregiverNotifications: React.FC<CaregiverNotificationsProps> = ({
       ...prev,
       [setting]: !prev[setting]
     }));
+  };
+
+  // Function to send caregiver email notification using EmailJS
+  const sendCaregiverEmail = () => {
+    const recipient = (profile.caregiverEmail || '').trim();
+    if (!recipient) {
+      alert('No caregiver email found in profile.');
+      return;
+    }
+    const payload = {
+      to_email: recipient,
+      user_name: profile.name,
+      health_condition: profile.healthCondition,
+      doctor_name: profile.doctorName,
+      doctor_phone: profile.doctorPhone,
+      emergency_contact: profile.emergencyContact
+    };
+    console.log('EmailJS payload:', payload);
+    import('emailjs-com').then(emailjs => {
+      emailjs.send(
+        'service_au9n3pq',
+        'template_xamm5yr',
+        payload,
+        'Clutb5hJYzEnVjuR1'
+      )
+      .then(() => {
+        alert('Notification sent to caregiver!');
+      })
+      .catch((error) => {
+        console.error('EmailJS error:', error);
+        alert('Failed to send notification.');
+      });
+    });
   };
 
   return (
@@ -288,7 +322,35 @@ const CaregiverNotifications: React.FC<CaregiverNotificationsProps> = ({
         </div>
       </div>
 
-      {/* Test Notification */}
+      {/* Manual Caregiver Notification */}
+      <div className={`rounded-xl shadow-lg p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className="flex items-center space-x-3 mb-6">
+          <Mail className="w-8 h-8 text-blue-500" />
+          <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Send Caregiver Notification
+          </h3>
+        </div>
+        <div className="text-center">
+          <button
+            onClick={sendCaregiverEmail}
+            disabled={!profile.caregiverEmail}
+            className={`inline-flex items-center space-x-3 px-8 py-4 rounded-lg text-lg font-medium transition-colors ${
+              !profile.caregiverEmail
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600'
+            } text-white`}
+          >
+            <Mail className="w-6 h-6" />
+            <span>Send Notification</span>
+          </button>
+          {!profile.caregiverEmail && (
+            <p className={`text-sm mt-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Please set up caregiver email in Profile section to enable notifications
+            </p>
+          )}
+        </div>
+      </div>
+      {/* Test Notification
       <div className={`rounded-xl shadow-lg p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center space-x-3 mb-6">
           <Bell className="w-8 h-8 text-green-500" />
@@ -315,15 +377,15 @@ const CaregiverNotifications: React.FC<CaregiverNotificationsProps> = ({
             <span>
               {testNotification ? 'Sending...' : 'Send Test Notification'}
             </span>
-          </button>
+          </button> */}
 
-          {!profile.caregiverEmail && (
+          {/* {!profile.caregiverEmail && (
             <p className={`text-sm mt-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Please set up caregiver email in Profile section to enable notifications
             </p>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Recent Missed Medicines */}
       {recentMissedMedicines.length > 0 && (
